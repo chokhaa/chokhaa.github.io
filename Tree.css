@@ -1,0 +1,13 @@
+.tree-node {
+  margin-left: 20px;
+  cursor: pointer;
+}
+.tree-node-text {
+  color: green;
+}
+.tree-node-name.selected {
+  border: solid 1px green;
+}
+.tree-node-name:hover {
+  background: #eee;
+}

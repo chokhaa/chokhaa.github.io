@@ -1,0 +1,6 @@
+@import url(./Tree.css);
+@import url(./Props.css);
+body {
+  background: #252323;
+  color: darkgrey;
+}

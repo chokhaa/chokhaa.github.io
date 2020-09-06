@@ -1,0 +1,8 @@
+.propsroot {
+  display: flex;
+  flex-direction: column;
+}
+
+.propsroot .publishcontrols {
+  display: flex;
+}
