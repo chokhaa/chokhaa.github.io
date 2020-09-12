@@ -9,6 +9,21 @@ export default function({ $model, $dispatch }) {
   const [name, setName] = useState(null);
   const elements = Object.keys($model._componentregistry)
     .map(key => ({name: key, value: $model._componentregistry[key].component}));
+
+  const propforms = Object.keys(node.props)
+  .map(prop => ({
+    name: prop,
+    type: node.props[prop].type,
+    default: node.props[prop].default
+  }))
+  .map(prop => {
+    return h(NewPropForm,
+      {
+        prop,
+        setProp: ({ newvalue, oldvalue }) => $dispatch({ action: 'updateNodeProp', payload: { node, newvalue, oldvalue } })
+      }
+    )
+  });
   return h('div',
   {
     class: 'propsroot'
@@ -54,11 +69,15 @@ export default function({ $model, $dispatch }) {
         ),
       ]
     ),
-    h(NewPropForm,
+    h('div',
+      null,
+      propforms
+    ),
+    h('button',
       {
-        onAdd: prop => $dispatch({ action: 'addProp', payload: { node, prop } })
+        onClick: e => $dispatch({ action: 'addProp', payload: { node } })
       },
-      []
+      'Add Property'
     ),
     h('button',
       {

@@ -1,5 +1,5 @@
 // import { createContext } from 'https://unpkg.com/preact@latest?module';
-
+let db = null;
 export const initialModel = {
   type: 'div',
   name: 'div',
@@ -66,6 +66,8 @@ export function reducer(state, {action, payload}) {
       return addComponent(state, payload);
     case 'addProp':
       return addProp(state, payload);
+    case 'updateNodeProp':
+      return updateNodeProp(state, payload);
   }
 }
 
@@ -118,14 +120,34 @@ function setNodeStyle(root, {node, style}) {
   }
 }
 
-function addProp(root, {node, prop}) {
+function updateNodeProp(root, { node, oldvalue, newvalue }) {
   const id = node._meta.id;
-  const { name } = prop;
   if (typeof root === 'object' && root._meta.id === id) {
-    root.props[name] = prop;
+    if (newvalue.name !== oldvalue.name) {
+      delete root.props[oldvalue.name]
+    }
+    root.props[newvalue.name] = newvalue;
+    if (newvalue.type === 'string' || newvalue.type === 'innerText') {
+      root.props[newvalue.name].default = newvalue.default;
+    } else {
+      root.props[newvalue.name].default = eval(newvalue.default);
+    }
     return { ...root }
   } else if (typeof root === 'object') {
-    const children = root.children.map(child => addProp(child, {node, prop}));
+    const children = root.children.map(child => updateNodeProp(child, { node, oldvalue, newvalue }));
+    return { ...root, children }
+  } else {
+    return root;
+  }
+}
+
+function addProp(root, {node}) {
+  const id = node._meta.id;
+  if (typeof root === 'object' && root._meta.id === id) {
+    root.props['_new_prop_'] = { type: 'string', default: '' };
+    return { ...root }
+  } else if (typeof root === 'object') {
+    const children = root.children.map(child => addProp(child, {node}));
     return { ...root, children }
   } else {
     return root;
@@ -163,7 +185,7 @@ export function publishComponent(model, dispatch, name) {
   const modelCopy = JSON.parse(JSON.stringify(model));
   delete modelCopy._componentregistry;
   // Publish component
-  const network_p = fetch('/components', {
+  return fetch('/components', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -175,10 +197,6 @@ export function publishComponent(model, dispatch, name) {
   })
   // Get list of components
   .then(() => getGeneratedComponents(dispatch))
-
-  const db_p = saveToDB(model, name);
-
-  return Promise.all([network_p, db_p]);
 }
 
 export function getGeneratedComponents(dispatch) {
@@ -193,8 +211,4 @@ export function getGeneratedComponents(dispatch) {
     for (let i = 0; i < names.length; i++)
       dispatch({action: 'registerComponent', payload: { name: names[i], renderer: components[i].default }})
   })
-}
-
-function saveToDB(model, filename) {
-  return Promise.resolve();
 }

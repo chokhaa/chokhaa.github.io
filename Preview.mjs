@@ -17,6 +17,11 @@ function renderNode(node) {
       }
     })
   }
+  Object.keys(node.props).forEach(key => {
+    if (node.props[key].type === 'innerText') {
+      children.push(node.props[key].default)
+    }
+  })
 
   const nodeStyle = {
     style: node.props.style || ''

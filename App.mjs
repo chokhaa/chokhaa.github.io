@@ -1,5 +1,5 @@
 import { h } from './vendor/preact.module.js';
-import { useReducer } from './vendor/preacthooks.module.js';
+import { useReducer, useEffect } from './vendor/preacthooks.module.js';
 import Preview from './Preview.mjs';
 import Tree from './Tree.mjs';
 import Props from './Props.mjs';
@@ -7,6 +7,7 @@ import Children from './Children.mjs';
 import { initialModel, reducer } from "./Model.mjs";
 
 export function App() {
+
   const [$model, $dispatch] = useReducer(reducer, initialModel);
   return h('div', {
     style: `
