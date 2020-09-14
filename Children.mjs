@@ -6,6 +6,17 @@ export default function({ $model, $dispatch }) {
   const [type, setType] = useState('div');
   const [text, setText] = useState(null);
   const elements = Object.keys($model._componentregistry);
+
+  const props = $model._componentregistry[type].props;
+
+  const renderedProps = Object.keys(props).map(prop => {
+    return h('span', { style: 'display: flex;' }, [
+      prop,
+      h('input', { placeholder: 'path to parent value to bind', style: 'margin-left: 10px' }),
+      h('input', { placeholder: 'fixed value', style: 'margin-left: 10px', value: props[prop].default })
+    ]);
+  });
+
   return h('div', null, [
     h('div',
       null,
@@ -17,20 +28,20 @@ export default function({ $model, $dispatch }) {
     }, [
       elements.map(el => h('option', { value: el }, el))
     ]),
-    h('input', {
-      value: text,
-      onChange: ev => setText(ev.target.value)
-    }),
     h('button',
       {
         onClick: e => {
+          const attrs = $model._componentregistry[type].props;
+          Object.keys(attrs).forEach(attr => {
+            attrs[attr] = { value: attrs[attr] };
+          });
           $dispatch({
             action: 'addChild',
             payload: {
               node,
-              type: $model._componentregistry[type].component,
+              renderer: $model._componentregistry[type].renderer,
               name: type,
-              text
+              attrs
             }
           })
         }
@@ -43,11 +54,7 @@ export default function({ $model, $dispatch }) {
         'Props ',
         h('div',
           null,
-          [
-            h('span', null, 'propname:'),
-            h('input', { placeholder: 'path to parent value to bind', style: 'margin-left: 10px' }),
-            h('input', { placeholder: 'fixed value', style: 'margin-left: 10px' })
-          ]
+          renderedProps
         )
       ]
     )

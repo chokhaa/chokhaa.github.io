@@ -1,179 +1,231 @@
-// import { createContext } from 'https://unpkg.com/preact@latest?module';
 let db = null;
+const primitives = ['div', 'a', 'p', 'span', 'button', 'input', 'select', 'option', 'textarea'];
 export const initialModel = {
-  type: 'div',
-  name: 'div',
-  props: {},
-  _meta: {
-    id: 1,
-    selected: true
+  arguments: {
+    expander: '[1, 2, 3]'
   },
-  children: [],
+  vdom: {
+    name: 'div',
+    renderer: 'div',
+    attrs: {},
+    _meta: {
+      id: 1,
+      selected: false
+    },
+    children: [
+      {
+        name: 'div',
+        renderer: 'div',
+        attrs: {
+          innerText: {
+            value: '`rendering with array of length: ${expander.length}`',
+            default: '``'
+          }
+        },
+        _meta: {
+          id: 2,
+          selected: false
+        },
+        children: []
+      },
+      {
+        name: 'span',
+        renderer: 'span',
+        attrs: {
+          'c-for': {
+            value: 'expander',
+            default: '[]'
+          },
+          innerText: {
+            value: '`Dum`'
+          }
+        },
+        _meta: {
+          id: 3,
+          selected: true
+        },
+        children: []
+      }
+    ]
+  },
   // TODO: Separate this out using usecontext
-  _componentregistry: {
-    div: {
-      component: 'div',
-      props: []
-    },
-    span: {
-      component: 'span',
-      props: []
-    },
-    p: {
-      component: 'p',
-      props: []
-    },
-    button: {
-      component: 'button',
-      props: []
-    },
-    input: {
-      component: 'input',
-      props: []
-    },
-    a: {
-      component: 'a',
-      props: []
-    },
-    select: {
-      component: 'select',
-      props: []
-    },
-    option: {
-      component: 'option',
-      props: []
-    },
-    textarea: {
-      component: 'textarea',
-      props: []
-    }
-  }
+  _componentregistry: primitives.reduce((reg, prim) => {
+    reg[prim] = {
+      renderer: prim,
+      props: {}
+    };
+    return reg;
+  }, {})
 }
-
-// export default createContext()
 
 export function reducer(state, {action, payload}) {
   switch(action) {
     case 'select':
       return selectNode(state, payload);
-    case 'updateNodeType':
-      return setNodeType(state, payload);
+    case 'delete':
+      return deleteNode(state, payload);
     case 'addChild':
       return addChild(state, payload);
-    case 'applyStyle':
-      return setNodeStyle(state, payload);
     case 'registerComponent':
       return addComponent(state, payload);
+    case 'addAttr':
+      return addAttr(state, payload);
     case 'addProp':
       return addProp(state, payload);
-    case 'updateNodeProp':
-      return updateNodeProp(state, payload);
+    case 'updateProp':
+      return updateProp(state, payload);
+    case 'updateAttr':
+      return updateAttr(state, payload);
   }
 }
 
-function addComponent(root, { name, renderer }) {
+function addComponent(root, { name, renderer, props }) {
   const _componentregistry = {
     ...root._componentregistry,
     [name]: {
-      component: renderer,
-      props: []
+      renderer,
+      props: props || {}
     }
   };
   return { ...root, _componentregistry }
 }
 
-function selectNode(root, node) {
+function selectNode(state, node) {
   const id = node._meta.id;
+  const vdom = selectNodeRecursively(state.vdom, id);
+  return { ...state, vdom };
+}
+
+function selectNodeRecursively(root, id) {
   if (typeof root === 'object') {
-    root._meta.selected = root._meta.id === id
+    root._meta.selected = root._meta.id === id;
     root.children = root.children.map(child => {
-      return selectNode(child, node);
+      return selectNodeRecursively(child, id);
     });
-    return {...root};
+    return root;
   }
   return root;
 }
 
-function setNodeType(root, {node, type}) {
+function deleteNode(state, node) {
   const id = node._meta.id;
-  if (typeof root === 'object' && root._meta.id === id) {
-    root.type = type
-    return { ...root }
-  } else if (typeof root === 'object') {
-    const children = root.children.map(child => setNodeType(child, {node, type}));
-    return { ...root, children }
-  } else {
-    return root;
+  if (state.vdom._meta.id === id) {
+    alert('Cnnot delete root node!')
+    return state;
   }
+  const vdom = deleteNodeRecursively(state.vdom, id);
+  return { ...state, vdom };
 }
 
-function setNodeStyle(root, {node, style}) {
-  const id = node._meta.id;
-  if (typeof root === 'object' && root._meta.id === id) {
-    root.props.style = style
-    return { ...root }
-  } else if (typeof root === 'object') {
-    const children = root.children.map(child => setNodeStyle(child, {node, style}));
-    return { ...root, children }
-  } else {
+function deleteNodeRecursively(root, id) {
+  if (typeof root === 'object') {
+    root.children = root.children.filter(child => child._meta.id !== id);
+    root.children = root.children.map(child => {
+      return deleteNodeRecursively(child, id);
+    });
     return root;
   }
+  return root;
 }
 
-function updateNodeProp(root, { node, oldvalue, newvalue }) {
-  const id = node._meta.id;
-  if (typeof root === 'object' && root._meta.id === id) {
-    if (newvalue.name !== oldvalue.name) {
-      delete root.props[oldvalue.name]
+function updateProp(state, { node, oldvalue, newvalue }) {
+  const newstate = { ...state };
+  if (newvalue.name !== oldvalue.name) {
+    delete newstate.arguments[oldvalue.name]
+  }
+  newstate.arguments[newvalue.name] = newvalue.default;
+  return newstate;
+}
+
+function updateAttr(state, { node, oldvalue, newvalue }) {
+  const vdom = recursiveUpdateAttr(state.vdom, { node, oldvalue, newvalue });
+  return { ...state, vdom };
+}
+
+function recursiveUpdateAttr(vnode, { node, oldvalue, newvalue }) {
+  if (vnode._meta.id === node._meta.id) {
+    if (oldvalue.name !== newvalue.name) {
+      delete vnode.attrs[oldvalue.name];
     }
-    root.props[newvalue.name] = newvalue;
-    if (newvalue.type === 'string' || newvalue.type === 'innerText') {
-      root.props[newvalue.name].default = newvalue.default;
-    } else {
-      root.props[newvalue.name].default = eval(newvalue.default);
-    }
-    return { ...root }
-  } else if (typeof root === 'object') {
-    const children = root.children.map(child => updateNodeProp(child, { node, oldvalue, newvalue }));
-    return { ...root, children }
+    vnode.attrs[newvalue.name] = newvalue;
   } else {
-    return root;
+    vnode.children = vnode.children.map(child => recursiveUpdateAttr(child, { node, oldvalue, newvalue }));
   }
+  return vnode;
 }
 
-function addProp(root, {node}) {
+function addProp(state, {node}) {
+  const id = node._meta.id;
+  const args = {
+    ...state.arguments,
+    _new_prop_: ''
+  };
+  return { ...state, arguments: args };
+}
+
+function addAttr(state, { node }) {
+  const vdom = recursiveAddAttr(state.vdom, node);
+  return {
+    ...state,
+    vdom
+  };
+}
+
+function recursiveAddAttr(vnode, node) {
+  let newnode = { ...vnode };
+  if (vnode._meta.id === node._meta.id) {
+    newnode.attrs['new-attr'] = '`dummyvalue`';
+  } else {
+    newnode.children = newnode.children.map(child => {
+      return recursiveAddAttr(child, node);
+    })
+  }
+  return newnode;
+}
+
+function addChild(state, {node, renderer, name, attrs}) {
+  const vdom = recursiveAddChild(state.vdom, { node, renderer, name, attrs });
+  return {
+    ...state,
+    vdom
+  };
+}
+
+function recursiveAddChild(root, { node, renderer, name, attrs }) {
   const id = node._meta.id;
   if (typeof root === 'object' && root._meta.id === id) {
-    root.props['_new_prop_'] = { type: 'string', default: '' };
+    root.children = [
+      ...root.children,
+      {
+        name,
+        renderer,
+        attrs,
+        _meta: {
+          id: new Date().getTime()
+        },
+        children: []
+      }
+    ]
     return { ...root }
   } else if (typeof root === 'object') {
-    const children = root.children.map(child => addProp(child, {node}));
+    const children = root.children.map(child => recursiveAddChild(child, {node, renderer, name}));
     return { ...root, children }
   } else {
     return root;
   }
 }
 
-function addChild(root, {node, type, name, text}) {
-  const id = node._meta.id;
-  if (typeof root === 'object' && root._meta.id === id) {
-    root.children = [...root.children, { name, type, props: {}, _meta: {id: new Date().getTime()}, children: text ? [text] : []}]
-    return { ...root }
-  } else if (typeof root === 'object') {
-    const children = root.children.map(child => addChild(child, {node, type, name, text}));
-    return { ...root, children }
-  } else {
-    return root;
-  }
+export function getSelectedNode(state) {
+  return recursiveFindSelectedNode(state.vdom);
 }
 
-export function getSelectedNode(root) {
+function recursiveFindSelectedNode(root) {
   if (root._meta.selected) {
     return root;
   } else {
     const selected = root.children.map(child => {
       if (typeof child === 'object')
-        return getSelectedNode(child)
+        return recursiveFindSelectedNode(child)
       else
         return null
     }).filter(node => !!node)
@@ -183,7 +235,6 @@ export function getSelectedNode(root) {
 
 export function publishComponent(model, dispatch, name) {
   const modelCopy = JSON.parse(JSON.stringify(model));
-  delete modelCopy._componentregistry;
   // Publish component
   return fetch('/components', {
     method: 'POST',
@@ -203,12 +254,19 @@ export function getGeneratedComponents(dispatch) {
   return fetch('/components')
   .then(data => data.json())
   .then(list => {
-    return Promise.all(list.map(file => import('/generated/' + file)))
+    return Promise.all(list.map(doc => import('/generated/' + doc._id)))
     .then(components => [list, components]);
   })
   // Add list to model
-  .then(([names, components]) => {
-    for (let i = 0; i < names.length; i++)
-      dispatch({action: 'registerComponent', payload: { name: names[i], renderer: components[i].default }})
+  .then(([list, components]) => {
+    for (let i = 0; i < list.length; i++)
+      dispatch({
+        action: 'registerComponent',
+        payload: {
+          name: list[i]._id,
+          renderer: components[i].default,
+          props: list[i].model.arguments
+        }
+      })
   })
 }

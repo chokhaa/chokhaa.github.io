@@ -9,14 +9,21 @@ const codegen = (function() {
   }
 
   function genImports(model) {
-    return `import { h } from '../vendor/preact.module.js'`;
+    const code = `import { h } from '../vendor/preact.module.js'`;
+    const imports = Object.keys(model._componentregistry || {}).filter(component => !primitives.includes(component)).map(component => {
+      return `import ${component} from '/components/${component}'`;
+    });
+    return [code].concat(imports).join(`
+    `);
   }
 
   function genComponent(model) {
+    const args = Object.keys(model.arguments || {}).join(',');
+
     return `
-    export default function({ $model, $dispatch }) {
+    export default function({ ${args} }) {
       return (
-        ${render(model)}
+        ${render(model.vdom)}
       );
     }
     `;
@@ -31,21 +38,27 @@ const codegen = (function() {
         if (typeof child === 'string') {
           return `'${child}'`;
         } else {
-          return render(child)
+          if (child.attrs['c-for']) {
+            const repeater = child.attrs['c-for'].value || child.attrs['c-for'].default;
+            delete child.attrs['c-for'];
+            return `...${repeater}.map(it => ${render(child)})`;
+          } else {
+            return render(child);
+          }
         }
       })
     }
 
-    let props = '';
-    Object.keys(model.props).forEach(key => {
-      props += `${key}: "${model.props[key]}",`;
+    let attrs = '';
+    Object.keys(model.attrs).forEach(key => {
+      attrs += `${key}: ${model.attrs[key].value || model.attrs[key].default},`;
     })
 
-    const componentRef = primitives.includes(model.type) ? `'${model.type}'` : model.type
+    const componentRef = `'${model.renderer}'`;
 
     return`h(${componentRef},
       {
-        ${props}
+        ${attrs}
       },
       [
         ${children}

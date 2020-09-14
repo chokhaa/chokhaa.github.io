@@ -4,6 +4,7 @@ import Preview from './Preview.mjs';
 import Tree from './Tree.mjs';
 import Props from './Props.mjs';
 import Children from './Children.mjs';
+import State from './State.mjs';
 import { initialModel, reducer } from "./Model.mjs";
 
 export function App() {
@@ -29,7 +30,13 @@ export function App() {
     )]),
     h('div', { style: `grid-area: props; border: solid 1px;` }, [h(Props, {$model, $dispatch})]),
     h('div', { style: `grid-area: children; border: solid 1px;` }, [h(Children, {$model, $dispatch})]),
-    h('div', { style: `grid-area: state; border: solid 1px;` }, 'state'),
+    h('div', { style: `grid-area: state; border: solid 1px;` }, [
+      'state'
+      // h(State,
+      //   {
+      //     $model, $dispatch
+      //   })
+    ]),
     h('div', { style: `grid-area: tree; border: solid 1px;` }, [
       h(Tree,
         {

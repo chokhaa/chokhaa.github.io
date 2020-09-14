@@ -1,12 +1,12 @@
 importScripts("codegen.js");
 importScripts("vendor/pouchdb.min.js");
-const db = new PouchDB('components');
+let db = null;
 self.addEventListener('install', event => {
   console.log('Attempting to install service worker and cache static assets');
 });
 
 self.addEventListener('activate', () => {
-  console.log('Script provider worker registered');
+  console.log('Script provider worker registered. Creating new db');
 })
 
 self.addEventListener('fetch', event => {
@@ -28,9 +28,10 @@ function handleRoutes(event) {
 }
 
 function getComponents() {
-  return db.allDocs().then(r => {
+  if (!db) db = new PouchDB('components');
+  return db.allDocs({ include_docs: true }).then(r => {
     return new Response(
-      JSON.stringify(r.rows.map(row => row.id)),
+      JSON.stringify(r.rows.map(row => row.doc)),
       {
         status: 200,
         statusText: 'OK',
@@ -46,7 +47,7 @@ function getCodegenedFile(request) {
   const { url, referrer } = request;
   const api = url.replace(referrer, '/');
   const modelname = api.replace('/generated/', '');
-
+  if (!db) db = new PouchDB('components');
   return db.get(modelname).then(data => {
     return new Response(
       codegen(data.model),
@@ -65,6 +66,7 @@ function saveComponent(request) {
   return request.json().then(r => {
     const modelname = r.filename;
     const model = r.model;
+    if (!db) db = new PouchDB('components');
     return db.put({
       _id: modelname,
       model

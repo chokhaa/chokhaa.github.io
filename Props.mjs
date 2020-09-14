@@ -10,20 +10,36 @@ export default function({ $model, $dispatch }) {
   const elements = Object.keys($model._componentregistry)
     .map(key => ({name: key, value: $model._componentregistry[key].component}));
 
-  const propforms = Object.keys(node.props)
+  const propforms = Object.keys($model.arguments)
   .map(prop => ({
     name: prop,
-    type: node.props[prop].type,
-    default: node.props[prop].default
+    type: 'string',
+    default: $model.arguments[prop]
   }))
   .map(prop => {
     return h(NewPropForm,
       {
         prop,
-        setProp: ({ newvalue, oldvalue }) => $dispatch({ action: 'updateNodeProp', payload: { node, newvalue, oldvalue } })
+        setProp: ({ newvalue, oldvalue }) => $dispatch({ action: 'updateProp', payload: { node, newvalue, oldvalue } })
       }
     )
   });
+
+  const attributes = Object.keys(node.attrs)
+  .map(attr => ({
+    name: attr,
+    type: 'string',
+    default: node.attrs[attr].value
+  }))
+  .map(prop => {
+    return h(NewPropForm,
+      {
+        prop,
+        setProp: ({ newvalue, oldvalue }) => $dispatch({ action: 'updateAttr', payload: { node, newvalue, oldvalue } })
+      }
+    )
+  })
+
   return h('div',
   {
     class: 'propsroot'
@@ -31,23 +47,28 @@ export default function({ $model, $dispatch }) {
   [
     h('div',
       null,
-      ['Modify selected components props']
+      ['Modify component props']
     ),
-    h('select',
+    h('div',
+      null,
+      propforms
+    ),
+    h('button',
       {
-        value: node.type,
-        onChange: e => $dispatch({ action: 'updateNodeType', payload: { node, type: e.target.value } })
+        onClick: e => $dispatch({ action: 'addProp', payload: { node } })
       },
-      [
-        elements.map(el => h('option', { value: el.value }, el.name))
-      ]
+      'Add Property'
     ),
-    h('textarea',
+    h('div', null, ['Modify element attributes']),
+    h('div',
+      null,
+      attributes
+    ),
+    h('button',
       {
-        placeholder: 'add css here',
-        value: $model.props.style,
-        onChange: e => $dispatch({action: 'applyStyle', payload: { node, style: e.target.value }})
-      }
+        onClick: e => $dispatch({ action: 'addAttr', payload: { node } })
+      },
+      'Add Attribute'
     ),
     h('div',
       {
@@ -68,16 +89,6 @@ export default function({ $model, $dispatch }) {
           'Publish'
         ),
       ]
-    ),
-    h('div',
-      null,
-      propforms
-    ),
-    h('button',
-      {
-        onClick: e => $dispatch({ action: 'addProp', payload: { node } })
-      },
-      'Add Property'
     ),
     h('button',
       {

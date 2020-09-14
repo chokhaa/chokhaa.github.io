@@ -1,7 +1,8 @@
 import { h } from './vendor/preact.module.js';
 
 export default function({ $model, $dispatch }) {
-  return h('div', {}, ['DOM', renderTree($model, $dispatch)]);
+  const { vdom } = $model;
+  return h('div', {}, ['DOM', renderTree(vdom, $dispatch)]);
 }
 
 function renderTree(node, dispatch) {
@@ -18,10 +19,22 @@ function renderTree(node, dispatch) {
     })
   }
 
-  const treeNode = h('div', {
-    className: node._meta.selected ? 'tree-node-name selected' : 'tree-node-name',
-    onClick: () => dispatch({ action: 'select', payload: node  })
-  }, node.name);
+  const treeNode = h(
+    'div',
+    {
+      className: node._meta.selected ? 'tree-node-name selected' : 'tree-node-name',
+      onClick: () => dispatch({ action: 'select', payload: node  })
+    },
+    [
+      node.name,
+      h('button',
+        {
+          onClick: () => dispatch({ action: 'delete', payload: node })
+        },
+        'Del'
+      )
+    ]
+  );
 
   children.unshift(treeNode);
 

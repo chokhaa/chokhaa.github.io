@@ -8,8 +8,7 @@
           style: 'display: flex;'
         },
         [
-          h('span', {}, [ 'Prop: ' ])
-          ,h(
+          h(
               'input',
               {
                 placeholder: 'propname',
@@ -20,81 +19,6 @@
                 })
               },
               []
-            )
-          ,h(
-              'select',
-              {
-                value: prop.type,
-                onChange: e => setProp({
-                  newvalue: {...prop, type: e.target.value},
-                  oldvalue: prop
-                })
-              },
-              [
-                h(
-                  'option',
-                  {
-                    value: 'number'
-                  },
-                  [
-                    'number'
-                  ]
-                )
-                ,h(
-                  'option',
-                  {
-                    value: 'string'
-                  },
-                  [
-                    'string'
-                  ]
-                )
-                ,h(
-                  'option',
-                  {
-                    value: 'boolean'
-                  },
-                  [
-                    'boolean'
-                  ]
-                )
-                ,h(
-                  'option',
-                  {
-                    value: 'array'
-                  },
-                  [
-                    'array'
-                  ]
-                )
-                ,h(
-                  'option',
-                  {
-                    value: 'object'
-                  },
-                  [
-                    'object'
-                  ]
-                )
-                ,h(
-                  'option',
-                  {
-                    value: 'function'
-                  },
-                  [
-                    'function'
-                  ]
-                ),
-                h(
-                  'option',
-                  {
-                    value: 'innerText'
-                  },
-                  [
-                    'innerText'
-                  ]
-                )
-              ]
             )
           ,h(
             'input',

@@ -11,3 +11,7 @@
 .tree-node-name:hover {
   background: #eee;
 }
+.tree-node-name {
+  display: flex;
+  justify-content: space-between;
+}
