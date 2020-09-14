@@ -1,52 +1,16 @@
 let db = null;
-const primitives = ['div', 'a', 'p', 'span', 'button', 'input', 'select', 'option', 'textarea'];
+const primitives = ['div', 'a', 'p', 'span', 'button', 'input', 'select', 'option', 'textarea', 'img'];
 export const initialModel = {
-  arguments: {
-    expander: '[1, 2, 3]'
-  },
+  arguments: {},
   vdom: {
     name: 'div',
     renderer: 'div',
     attrs: {},
     _meta: {
       id: 1,
-      selected: false
+      selected: true
     },
-    children: [
-      {
-        name: 'div',
-        renderer: 'div',
-        attrs: {
-          innerText: {
-            value: '`rendering with array of length: ${expander.length}`',
-            default: '``'
-          }
-        },
-        _meta: {
-          id: 2,
-          selected: false
-        },
-        children: []
-      },
-      {
-        name: 'span',
-        renderer: 'span',
-        attrs: {
-          'c-for': {
-            value: 'expander',
-            default: '[]'
-          },
-          innerText: {
-            value: '`Dum`'
-          }
-        },
-        _meta: {
-          id: 3,
-          selected: true
-        },
-        children: []
-      }
-    ]
+    children: []
   },
   // TODO: Separate this out using usecontext
   _componentregistry: primitives.reduce((reg, prim) => {
