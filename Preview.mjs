@@ -1,24 +1,27 @@
 import { h } from './vendor/preact.module.js';
 
 export default function Preview({ $model }) {
-  return render($model);
+  const { arguments: args, vdom } = $model;
+  return renderVnode(vdom, args);
 }
 
-function render(model) {
-  const { arguments: args, vdom } = model;
-
-  return renderVnode(vdom, evalMultipleInContext(args, {}));
-}
-
-function renderVnode(vnode, args) {
-  const attrs = getEvaluatedValues(vnode.attrs || {}, args);
-  const props = getEvaluatedValues(vnode.props || {}, args);
+function renderVnode(vnode, args, localbindings) {
+  const localvars = {};
+  if (localbindings) {
+    Object.keys(localbindings).forEach(key => {
+      const [it, i] = key.split(",").map(tok => tok.trim());
+      localvars[it] = localbindings[key][0];
+      localvars[i] = localbindings[key][1];
+    })
+  }
+  const attrs = getEvaluatedValues(vnode.attrs || {}, { ...args, ...localvars });
+  // const props = getEvaluatedValues(vnode.props || {}, args);
   const children = renderChildren(vnode, args);
   if (vnode._meta.selected) {
     attrs.style = 'border: solid 1px red;' + attrs.style;
   }
-  let output;
-  output = h(vnode.renderer, attrs, children);
+
+  let output = h(vnode.renderer, attrs, children);
   // if (typeof vnode.renderer === 'string') {
   //   output = h(vnode.renderer, attrs, children);
   // } else {
@@ -29,12 +32,19 @@ function renderVnode(vnode, args) {
 
 function renderChildren(vnode, args) {
   return vnode.children.flatMap(child => {
-    const attrs = getEvaluatedValues(child.attrs || {}, args);
-    const props = getEvaluatedValues(child.props || {}, args);
+    const onlyifandfor = {}
+    if (child.attrs['c-for']) {
+      onlyifandfor['c-for'] = child.attrs['c-for'];
+    }
+    if (child.attrs['c-if']) {
+      onlyifandfor['c-if'] = child.attrs['c-if'];
+    }
+    const attrs = getEvaluatedValues(onlyifandfor, args);
+    // const props = getEvaluatedValues(child.props || {}, args);
     if (attrs['c-if'] !== undefined && !attrs['c-if']) {
       return null;
     } else if (attrs['c-for']) {
-      return attrs['c-for'].map(() => renderVnode(child, args));
+      return attrs['c-for'].map((item, i) => renderVnode(child, args, {[child.attrs["c-for"].cforitr]: [child.attrs["c-for"].value + `[${i}]`, i]}));
     } else {
       return renderVnode(child, args);
     }
@@ -54,12 +64,18 @@ function evalMultipleInContext(expressions, context) {
 
 function evalInContext(expression, context) {
   const contextstring = Object.keys(context).reduce((expr, key) => {
-    const value = JSON.stringify(context[key]);
-    return expr + ` let ${key} = ${value};`;
+    return expr + ` let ${key} = ${context[key] || null};`;
   }, '');
+  // const contextstring = context;
   const value = `(() => {
     ${contextstring}
     return ${expression};
   })()`
-  return eval(value);
+  try {
+    return eval(value);
+  } catch(e) {
+    console.error(e);
+    alert(e);
+    return undefined;
+  }
 }

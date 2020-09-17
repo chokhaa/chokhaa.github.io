@@ -74,7 +74,7 @@ function selectNodeRecursively(root, id) {
 function deleteNode(state, node) {
   const id = node._meta.id;
   if (state.vdom._meta.id === id) {
-    alert('Cnnot delete root node!')
+    alert('Cannot delete root node!')
     return state;
   }
   const vdom = deleteNodeRecursively(state.vdom, id);
@@ -111,7 +111,10 @@ function recursiveUpdateAttr(vnode, { node, oldvalue, newvalue }) {
     if (oldvalue.name !== newvalue.name) {
       delete vnode.attrs[oldvalue.name];
     }
-    vnode.attrs[newvalue.name] = newvalue;
+    vnode.attrs[newvalue.name] = { value: newvalue.default };
+    if (newvalue.cforitr) {
+      vnode.attrs[newvalue.name].cforitr = newvalue.cforitr;
+    }
   } else {
     vnode.children = vnode.children.map(child => recursiveUpdateAttr(child, { node, oldvalue, newvalue }));
   }
@@ -149,6 +152,7 @@ function recursiveAddAttr(vnode, node) {
 
 function addChild(state, {node, renderer, name, attrs}) {
   const vdom = recursiveAddChild(state.vdom, { node, renderer, name, attrs });
+  console.log(vdom);
   return {
     ...state,
     vdom

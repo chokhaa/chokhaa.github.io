@@ -13,7 +13,6 @@ export default function({ $model, $dispatch }) {
   const propforms = Object.keys($model.arguments)
   .map(prop => ({
     name: prop,
-    type: 'string',
     default: $model.arguments[prop]
   }))
   .map(prop => {
@@ -29,7 +28,8 @@ export default function({ $model, $dispatch }) {
   .map(attr => ({
     name: attr,
     type: 'string',
-    default: node.attrs[attr].value
+    default: node.attrs[attr].value,
+    cforitr: node.attrs[attr].cforitr
   }))
   .map(prop => {
     return h(NewPropForm,

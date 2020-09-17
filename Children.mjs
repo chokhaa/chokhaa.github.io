@@ -31,9 +31,11 @@ export default function({ $model, $dispatch }) {
     h('button',
       {
         onClick: e => {
-          const attrs = $model._componentregistry[type].props;
+          // TODO: The props should be obtained by calling a function to ensure uniqueness
+          const registeredProps = $model._componentregistry[type].props;
+          const attrs = JSON.parse(JSON.stringify(registeredProps));
           Object.keys(attrs).forEach(attr => {
-            attrs[attr] = { value: attrs[attr] };
+            attrs[attr] = { value: attrs[attr].value };
           });
           $dispatch({
             action: 'addChild',

@@ -10,18 +10,25 @@ const codegen = (function() {
 
   function genImports(model) {
     const code = `import { h } from '../vendor/preact.module.js'`;
-    const imports = Object.keys(model._componentregistry || {}).filter(component => !primitives.includes(component)).map(component => {
-      return `import ${component} from '/components/${component}'`;
-    });
+    // const imports = Object.keys(model._componentregistry || {}).filter(component => !primitives.includes(component)).map(component => {
+    //   return `import ${component.replace(".mjs", "")} from './components/${component}'`;
+    // });
+    const imports = [];
     return [code].concat(imports).join(`
     `);
   }
 
   function genComponent(model) {
     const args = Object.keys(model.arguments || {}).join(',');
+    const defaults = Object.keys(model.arguments || {}).map(prop => {
+      return `${prop} = ${prop} !== undefined ? ${prop} : ${model.arguments[prop]} ;`;
+    }).join(`
+    `);
+    console.log(defaults);
 
     return `
     export default function({ ${args} }) {
+      ${defaults}
       return (
         ${render(model.vdom)}
       );
@@ -40,8 +47,9 @@ const codegen = (function() {
         } else {
           if (child.attrs['c-for']) {
             const repeater = child.attrs['c-for'].value || child.attrs['c-for'].default;
+            const bindings = child.attrs['c-for'].cforitr;
             delete child.attrs['c-for'];
-            return `...${repeater}.map(it => ${render(child)})`;
+            return `...${repeater}.map((${bindings}) => ${render(child)})`;
           } else {
             return render(child);
           }
